@@ -32,7 +32,11 @@ pub fn collect_tokens(expression : &str, delimiters : &[&str]) -> Vec<String> {
     let mut tokens : Vec<String> = Vec::new();
     let mut base : usize = 0;
     for (i, delimiter) in margins {
-        let substring : String = expression.chars().skip(base).take(i-base).collect();
+        let substring : String = expression
+            .chars()
+            .skip(base)
+            .take(i-base)
+            .collect();
         if &substring != "" {
             tokens.push(substring);
         }
@@ -40,7 +44,11 @@ pub fn collect_tokens(expression : &str, delimiters : &[&str]) -> Vec<String> {
         tokens.push(delimiter);
     }
     // add final element
-    let last : String = expression.chars().skip(base).take(expression.len()-base).collect();
+    let last : String = expression
+        .chars()
+        .skip(base)
+        .take(expression.len()-base)
+        .collect();
     if &last != "" {
         tokens.push(last);
     }
