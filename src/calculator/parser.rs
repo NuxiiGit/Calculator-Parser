@@ -1,4 +1,5 @@
 /// Returns a `Vec<String>` of tokens, separated by an array of delimiters.
+#[allow(dead_code)]
 pub fn collect_tokens(expression : &str, delimiters : &[&str]) -> Vec<String> {
     let mut margins : Vec<(usize, String)> = Vec::new();
     for &delimiter in delimiters {
