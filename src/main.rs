@@ -9,10 +9,10 @@ fn main() {
     operators.push(parser::Operator::new("/", 1, |a, b| a / b));
     operators.push(parser::Operator::new("+", 0, |a, b| a + b));
     operators.push(parser::Operator::new("-", 0, |a, b| a - b));
-    // get tokens
-    let tokens = parser::collect_tokens(&expression, &operators);
-    println!("{}", parser::well_braced(&tokens));
-    for item in tokens {
-        println!("{}", item);
+    match parser::parse(&expression, &operators) {
+        Err(msg) => {
+            println!("Error: {}", msg);
+        },
+        _ => {}
     }
 }
