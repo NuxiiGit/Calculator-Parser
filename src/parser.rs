@@ -1,238 +1,128 @@
-static BRACES : &[(&str, &str)] = &[("(",")"),("[","]")];
+/// A structure used to parse input.
+#[allow(dead_code)]
+pub struct Parser<T> {
+    operators : Vec<Operator<T>>
+}
+impl<T> Parser<T> {
+    /// Constructs a new `Parser` instance.
+    #[allow(dead_code)]
+    pub fn new() -> Parser<T> {
+        Parser {
+            operators : Vec::new()
+        }
+    }
 
-/// A structure used to define the operators of an equation.
+    /// Consumes an operator and adds it to the parser's operator vector.
+    /// The vector is sorted in order of preceedence.
+    #[allow(dead_code)]
+    pub fn add<'a>(&mut self, operator : Operator<T>) {
+        self.operators.push(operator);
+        self.operators.sort_by(|a, b| {
+            use std::cmp::Ordering;
+            let a : usize = a.precedence();
+            let b : usize = b.precedence();
+            if a < b {
+                Ordering::Greater
+            } else if a > b {
+                Ordering::Less
+            } else {
+                Ordering::Equal
+            }
+        });
+    }
+
+    /// Splits a `&str` expression into a `Vec<Token>` of tokens.
+    #[allow(dead_code)]
+    pub fn parse(&self, expression : &str) -> Vec<Token<T>> {
+        let mut tokens : Vec<Token<T>> = Vec::new();
+
+        tokens
+    }
+
+    /// Returns a `Vec<String>` of all possible operator symbols, organised from shortest to longest with no duplicates.
+    #[allow(dead_code)]
+    pub fn symbols(&self) -> Vec<String> {
+        let mut symbols : Vec<String> = Vec::new();
+        for operator in &self.operators {
+            for symbol in operator.pattern() {
+                if symbol != "_" { // reserved argument symbol
+                    symbols.push(symbol.to_owned());
+                }
+            }
+        }
+        symbols.sort_by(|a, b| {
+            // sort in descending order
+            use std::cmp::Ordering;
+            if b.len() < a.len() {
+                Ordering::Less
+            } else if b.len() > a.len() {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+        symbols
+    }
+}
+
+/// An enum used to collect values and operators into a single parent.
+#[allow(dead_code)]
+pub enum Token<T> {
+    Value(T),
+    Symbol(String)
+}
+
+/// A recursive data type which is used to represent a token tree.
+#[allow(dead_code)]
+pub enum TokenTree<'a, T> {
+    Leaf(T),
+    Node(Operator<T>, &'a [TokenTree<'a, T>])
+}
+
+/// A structure used to define generic operators.
 #[allow(dead_code)]
 pub struct Operator<T> {
-    symbol : String,
-    priority : usize,
-    f : fn(T, T) -> T
+    pattern : Vec<String>,
+    precedence : usize,
+    operation : fn(&[T]) -> T
 }
 
 impl<T> Operator<T> {
     /// Constructs a new `Operator` instance.
     #[allow(dead_code)]
-    pub fn new(symbol : &str, priority : usize, f : fn(T, T) -> T) -> Operator<T> {
-        if symbol == "" {
-            panic!("Operator symbol must be non-empty!");
-        } else {
-            for (left, right) in BRACES {
-                if symbol.contains(left)
-                || symbol.contains(right) {
-                    panic!("Illegal use of brace within operator definition!");
-                }
-            }
-        }
+    pub fn new<'a>(pattern : &str, priority : usize, f : fn(&[T]) -> T) -> Operator<T> {
         Operator {
-            symbol : String::from(symbol),
-            priority : priority,
-            f : f
-        }
-    }
-}
-
-/// A private enum used to store tokens together.
-enum Token<'a, T> {
-    OpenBracket(),
-    CloseBracket(),
-    Type(T),
-    Operator(&'a Operator<T>)
-}
-
-/// Parses and verifies input, then returns a `Result<T, &str>`.
-#[allow(dead_code)]
-pub fn parse<'a, T>(expression : &str, operators : &[Operator<T>]) -> Result<T, &'a str> where
-        T : std::str::FromStr,
-        T : std::fmt::Display {
-    let tokens : Vec<String> = collect_tokens(
-        &expression
-            .replace("\n","")
-            .replace("\r","")
-            .replace(" ",""),
-        operators
-    );
-    let mut infix : Vec<Token<T>> = Vec::new();
-    let mut postfix : Vec<Token<T>> = Vec::new();
-    // check the expression is well-braced
-    if !(| | {
-        let mut stack : Vec<&(&str, &str)> = Vec::new();
-        for token in &tokens {
-            for brace in BRACES {
-                if token == brace.0
-                || token == brace.1 {
-                    if token == brace.0 {
-                        stack.push(brace);
-                    } else {
-                        match stack.pop() {
-                            Some(ancestor) => {
-                                if ancestor != brace {
-                                    return false;
-                                }
-                            },
-                            None => {
-                                return false;
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-        stack.len() == 0
-    })() {
-        return Err("Expression is not well-braced");
-    }
-    // parse tokens
-    'outer : for token in &tokens {
-        for brace in BRACES {
-            if token == brace.0
-            || token == brace.1 {
-                if token == brace.0 {
-                    infix.push(Token::OpenBracket());
-                } else {
-                    infix.push(Token::CloseBracket());
-                }
-                continue 'outer;
-            }
-        }
-        for operator in operators {
-            if token == &operator.symbol {
-                infix.push(Token::Operator(operator));
-                continue 'outer;
-            }
-        }
-        match token.parse::<T>() {
-            Ok(value) => {
-                infix.push(Token::Type(value))
-            },
-            Err(_) => {
-                println!("{}{}", token,"a");
-                return Err("Unable to parse token.");
-            }
-        }
-    }
-    // convert infix to postfix
-    let mut operator_stack : Vec<Token<T>> = Vec::new();
-    for token in infix {
-        match token {
-            Token::OpenBracket() => {
-                operator_stack.push(token)
-            },
-            Token::CloseBracket() => {
-                loop {
-                    match operator_stack.pop() {
-                        Some(Token::Operator(operator)) => {
-                            postfix.push(Token::Operator(operator));
-                        },
-                        _ => {
-                            break;
-                        }
+            pattern : {
+                let mut split : Vec<String> = Vec::new();
+                for item in pattern
+                        .replace("_", " _ ")
+                        .split(" ") {
+                    if item != "" {
+                        split.push(item.to_owned());
                     }
                 }
+                split
             },
-            Token::Operator(op1) => {
-                match operator_stack.last() {
-                    Some(Token::Operator(op2)) => {
-                        if op2.priority > op1.priority {
-                            loop {
-                                match operator_stack.pop() {
-                                    Some(Token::Operator(operator)) => {
-                                        postfix.push(Token::Operator(operator));
-                                    },
-                                    _ => {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    _ => {}
-                }
-                operator_stack.push(token);
-            },
-            _ => {
-                postfix.push(token);
-            }
+            precedence : priority.to_owned(),
+            operation : f
         }
     }
-    while !operator_stack.is_empty() {
-        match operator_stack.pop() {
-            Some(Token::Operator(operator)) => {
-                postfix.push(Token::Operator(operator));
-            },
-            _ => {}
-        }
-    }
-    for token in &postfix {
-        match token {
-            Token::Operator(operator) => {
-                println!("Operator: {}", operator.symbol);
-            },
-            Token::Type(value) => {
-                println!("Type:     {}", value);
-            }
-            _ => {}
-        }
-    }
-    Err("Not implemented!")
-}
 
-/// Returns a `Vec<String>`
-/// Types of braces are found within `BRACES`.
-#[allow(dead_code)]
-pub fn collect_tokens<T>(expression : &str, operators : &[Operator<T>]) -> Vec<String> {
-    let mut margins : Vec<(usize, &str)> = Vec::new();
-    let mut symbols : Vec<&str> = Vec::new();
-    for brace in BRACES {
-        symbols.push(brace.0);
-        symbols.push(brace.1);
+    /// Returns a reference to the operator's pattern.
+    #[allow(dead_code)]
+    pub fn pattern(&self) -> &[String] {
+        &self.pattern
     }
-    for operator in operators {
-        symbols.push(&operator.symbol);
+
+    /// Returns a clone of the operator's precedence to the caller.
+    #[allow(dead_code)]
+    pub fn precedence(&self) -> usize {
+        self.precedence.clone()
     }
-    for symbol in symbols {
-        'outer : for (i, _) in expression.match_indices(symbol) { 
-            for (j, delimiter) in &margins {
-                match j { &v => {
-                    if i >= v
-                    && i <  v + delimiter.len() {
-                        continue 'outer;
-                    }
-                }}
-            }
-            margins.push((i, symbol));
-            break;
-        }
+
+    /// Calls the operator's operation on an input array of arguments of type `T`.
+    #[allow(dead_code)]
+    pub fn operate(&self, args : &[T]) -> T {
+        (self.operation)(args)
     }
-    margins.sort_by(|a, b| {
-        use std::cmp::Ordering;
-        if a.0 < b.0 {
-            Ordering::Less
-        } else if a.0 > b.0 {
-            Ordering::Greater
-        } else {
-            Ordering::Equal
-        }
-    });
-    let mut tokens : Vec<String> = Vec::new();
-    let mut base : usize = 0;
-    for (i, delimiter) in margins {
-        let substring : String = expression.chars()
-            .skip(base)
-            .take(i-base)
-            .collect();
-        if &substring != "" {
-            tokens.push(substring);
-        }
-        base = i + delimiter.len();
-        tokens.push(String::from(delimiter));
-    }
-    // push final element
-    let last : String = expression.chars()
-        .skip(base)
-        .take(expression.len() - base)
-        .collect();
-    if &last != "" {
-        tokens.push(last);
-    }
-    tokens
 }
