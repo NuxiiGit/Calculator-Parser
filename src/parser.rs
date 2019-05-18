@@ -302,20 +302,6 @@ impl<T> Operator<T> {
     pub fn operate(&self, args : &[T]) -> T {
         (self.operation)(args)
     }
-
-    /// Finds the first occurence of this operator within a `&[Token<S>]` array such that it has enough information to be parsed.
-    /// Returns a `Result<Option<(usize, usize, Vec<(usize, usize)>)>, &str>` which is essentially a tuple where the first two values are the start and end of the region, and the vector is an array of start and end positions for the individual arguments of the operator.
-    /// # Example
-    /// Assuming operators `(_)`, `_*_`, and `_+_` exist, then
-    /// ```
-    /// let tokens = &["(", 1, "+", 3, ")", "*", 1];
-    /// product.locate(tokens);
-    /// ```
-    /// will return Ok(None) because the parser is looking for `*` surrounded by two values, but in this case we get `*` surrounded by `")"` and `1`, and `")"` is not a value.
-    #[allow(dead_code)]
-    pub fn locate<'a, S>(&self, tokens : &[Token<S>]) -> Result<Option<(usize, usize, Vec<(usize, usize)>)>, &'a str> {
-        Err("Not implemented.")
-    }
 }
 
 /// An enum used to collect values and symbols into a single parent.
