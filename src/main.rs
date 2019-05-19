@@ -4,7 +4,6 @@ mod input;
 use parser::*;
 
 fn main() {
-    let expression : String = input::read_buffer();
     let mut parser : Parser<f64> = Parser::new();
     // add operators of parser
     parser.add_op(Operator::new("(_)", 3, |args| args[0]));
@@ -25,15 +24,25 @@ fn main() {
         print!(" {},", symbol);
     }
     println!();
+    println!("Your operators are:");
+    for operator in parser.operators() {
+        println!("pattern={}, precedence={}, (post={}, bracket={}, pre={})", operator.pattern(), operator.precedence(), operator.is_post(), operator.is_bracket(), operator.is_pre());
+    }
+    // parse
+    let expression : String = input::read_buffer();
     match parser.parse(&expression) {
         Ok(tokens) => {
-            for token in tokens {
-                match token {
-                    Token::Symbol(symbol) => {
-                        println!("Symbol: {}", symbol);
-                    },
-                    Token::Value(value) => {
-                        println!("Value: {}", value);
+            if tokens.len() == 0 {
+                println!("Empty expression.");
+            } else {
+                for token in tokens {
+                    match token {
+                        Token::Symbol(symbol) => {
+                            println!("Symbol: {}", symbol);
+                        },
+                        Token::Value(value) => {
+                            println!("Value: {}", value);
+                        }
                     }
                 }
             }
