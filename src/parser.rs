@@ -37,6 +37,13 @@ impl<T> Parser<T> {
         });
     }
 
+    /// Takes an operator id and attempts to remove it from the parser.
+    /// Returns `panics` if the operator does not exist, so you should always use `operators<T>()` to locate the operator you wish to remove before calling this.
+    #[allow(dead_code)]
+    pub fn remove_op<'a>(&mut self, index : usize) {
+        self.operators.remove(index);
+    }
+
     /// Splits a `&str` expression into a `Vec<Token>` of tokens.
     #[allow(dead_code)]
     pub fn parse<'a>(&self, expression : &str) -> Result<Vec<Token<T>>, &'a str> where
@@ -78,12 +85,8 @@ impl<T> Parser<T> {
         for (i, symbol) in regions {
             if i > base {
                 match self.parse_value(expression, base, i) {
-                    Ok(value) => {
-                        tokens.push(Token::Value(value));
-                    },
-                    Err(msg) => {
-                        return Err(msg);
-                    }
+                    Ok(value) => tokens.push(Token::Value(value)),
+                    Err(msg) => return Err(msg)
                 }
             }
             base = i + symbol.len();
@@ -91,98 +94,12 @@ impl<T> Parser<T> {
         }
         if last > base {
             match self.parse_value(expression, base, last) {
-                Ok(value) => {
-                    tokens.push(Token::Value(value));
-                },
-                Err(msg) => {
-                    return Err(msg);
-                }
+                Ok(value) => tokens.push(Token::Value(value)),
+                Err(msg) => return Err(msg)
             }
         }
         Ok(tokens)
     }
-
-    /*
-    /// Constructs and returns a `Result<ParseTree<T>, &str>` of the input `&[Token<T>]` array.
-    #[allow(dead_code)]
-    pub fn build_tree<'a>(&self, tokens : &[Token<T>], start : usize, end : usize) -> Result<ParseTree<T>, &'a str> where
-            T : std::clone::Clone {
-        if tokens.len() == 0 {
-            return Err("Empty token array.");
-        }
-        // re-format tokens into a vector of tokens containing either parse trees or symbols.
-        let mut trees : Vec<Token<ParseTree<T>>> = Vec::new();
-        for (i, token) in tokens.iter().enumerate() {
-            if i >= start
-            || i < end {
-                match token {
-                    Token::Value(value) => {
-                        trees.push(Token::Value(ParseTree::Leaf(value.to_owned())));
-                    },
-                    Token::Symbol(symbol) => {
-                        trees.push(Token::Symbol(symbol.to_owned()));
-                    }
-                }
-            }
-        }
-        // steps to solve:
-        //     0) order operators by precedence
-        //     1) for every operator in operators:
-        //   1.1)     find the first occurence of that operator and the position of its arguments
-        //   1.2)     if the beginning of an operator was found, but not completed, then return Err("Imbalanced operator stack.")
-        //   1.3)     for every argument at each position:
-        // 1.3.1)         recursively call build_tree on this sub-array of tokens
-        // 1.3.2)         if Err(msg) then return Err(msg)
-        // 1.3.3)         otherwise, push the new tree onto a vector
-        //   1.4)     construct a new tree from the vector of arguments and the operator and replace the entire range of the original operator with that single tree element
-        for operator in &self.operators {
-            'outer:
-            loop {
-                match operator.locate(&trees) {
-                    Ok(Some((start, end, arguments))) => {
-                        let mut subtrees : Vec<ParseTree<T>> = Vec::new();
-                        for (arg_start, arg_end) in arguments {
-                            match self.build_tree(tokens, arg_start, arg_end) {
-                                Ok(subtree) => {
-                                    subtrees.push(subtree);
-                                },
-                                Err(msg) => {
-                                    return Err(msg);
-                                }
-                            }
-                        }
-                        let tree : ParseTree<T> = ParseTree::Node(operator.to_owned(), subtrees);
-                        let mut i : usize = end - start;
-                        while i > 0 {
-                            i -= 1;
-                            trees.remove(start);
-                        }
-                        trees.insert(start, Token::Value(tree));
-                    },
-                    Ok(None) => {
-                        break 'outer;
-                    },
-                    Err(msg) => {
-                        return Err(msg);
-                    }
-                }
-            }
-        }
-        if trees.len() == 1 {
-            match trees.get(0) {
-                Some(Token::Value(tree)) => {
-                    Ok(tree.to_owned())
-                },
-                _ => {
-                    Err("Unknown error.")
-                }
-            }
-        } else {
-            println!("{}", trees.len());
-            Err("Unknown operator.")
-        }
-    }
-    */
 
     /// Returns a `Vec<String>` of all possible operator symbols, organised from shortest to longest with no duplicates.
     #[allow(dead_code)]
@@ -209,6 +126,16 @@ impl<T> Parser<T> {
         symbols
     }
 
+    /// Returns a `Vec<&Operator<T>>` of references to the operators within the parser
+    #[allow(dead_code)]
+    pub fn operators(&self) -> Vec<&Operator<T>> {
+        let mut operators : Vec<&Operator<T>> = Vec::new();
+        for operator in &self.operators {
+            operators.push(operator);
+        }
+        operators
+    }
+
     /// Parses a single value of an expression between a `start` and `end` index.
     /// Returns a `Result<Option<T>, &str>`. `Ok(None)` is returned when the substring results in an empty string.
     #[allow(dead_code)]
@@ -223,12 +150,8 @@ impl<T> Parser<T> {
                 .take(end - start)
                 .collect();
         match substring.parse::<T>() {
-            Ok(value) => {
-                Ok(value)
-            },
-            Err(_) => {
-                Err("Unable to parse expression value.")
-            }
+            Ok(value) => Ok(value),
+            _ => Err("Unable to parse expression value.")
         }
     }
 }
@@ -245,7 +168,9 @@ pub enum ParseTree<T> {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Operator<T> {
-    pattern : Vec<String>,
+    postfix : bool,
+    prefix : bool,
+    symbols : Vec<String>,
     precedence : usize,
     operation : fn(&[T]) -> T
 }
@@ -253,42 +178,83 @@ pub struct Operator<T> {
 impl<T> Operator<T> {
     /// Constructs a new `Operator` instance.
     #[allow(dead_code)]
-    pub fn new<'a>(pattern : &str, priority : usize, f : fn(&[T]) -> T) -> Operator<T> {
-        let mut split : Vec<String> = Vec::new();
-        for item in pattern
-                .replace("_", " _ ")
-                .split(" ") {
-            if item != "" {
-                split.push(item.to_owned());
+    pub fn new<'a>(pattern : &str, precedence : usize, operation : fn(&[T]) -> T) -> Operator<T> {
+        let mut postfix : bool = false;
+        let mut prefix : bool = false;
+        let mut symbols : Vec<String> = Vec::new();
+        for (i, item) in pattern
+                .replace(" ", "")
+                .split("_")
+                .enumerate() {
+            if item == "" {
+                if i == 0 {
+                    // this means that the pattern started with an underscore "_something"
+                    postfix = true;
+                } else {
+                    // this means that the pattern ended with an underscore "something_"
+                    prefix = true;
+                }
+            } else {
+                symbols.push(item.to_owned());
             }
         }
         Operator {
-            pattern : split,
-            precedence : priority.to_owned(),
-            operation : f
+            postfix : postfix,
+            prefix : prefix,
+            symbols : symbols,
+            precedence : precedence,
+            operation : operation
         }
     }
 
     /// Returns a vctor of available symbols for this operator.
     #[allow(dead_code)]
     pub fn symbols(&self) -> Vec<String> {
-        let mut symbols : Vec<String> = Vec::new();
-        for symbol in &self.pattern {
-            if symbol != "_" { // reserved argument symbol
-                symbols.push(symbol.to_owned());
-            }
-        }
-        symbols
+        self.symbols.clone()
+    }
+
+    /// Returns whether the operator has postfix behaviour
+    #[allow(dead_code)]
+    pub fn is_post(&self) -> bool {
+        self.postfix
+    }
+
+    /// Returns whether the operator has prefix behaviour
+    #[allow(dead_code)]
+    pub fn is_pre(&self) -> bool {
+        self.prefix
+    }
+
+    /// Returns whether the operator has bracket behaviour
+    #[allow(dead_code)]
+    pub fn is_bracket(&self) -> bool {
+        // more than one symbol means that the operator has a pattern of (at least) the form "s1_s2" where "s1" and "s2" are symbols.
+        // for example the modulus operator is a bracket operator because it has the pattern "|_|".
+        self.symbols.len() > 1
     }
 
     /// Returns the operator's pattern as a string.
     #[allow(dead_code)]
     pub fn pattern(&self) -> String {
-        let mut pattern : String = String::new();
-        for symbol in &self.pattern {
-            pattern += symbol;
+        let mut pattern : String;
+        if self.postfix {
+            pattern = String::from("_");
+        } else {
+            pattern = String::new();
         }
-        pattern
+        for (i, symbol) in self.symbols
+                .iter()
+                .enumerate() {
+            if i != 0 {
+                pattern.push('_');
+            }
+            pattern.push_str(symbol);
+        }
+        if self.prefix {
+            pattern + "_"
+        } else {
+            pattern
+        }
     }
 
     /// Returns a clone of the operator's precedence to the caller.
