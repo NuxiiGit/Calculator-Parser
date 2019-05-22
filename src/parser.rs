@@ -107,15 +107,22 @@ impl<T> Parser<T> {
             T : Clone,
             T : std::fmt::Display {
         let mut expression : Vec<Token<T>> = expression.to_owned();
-        for operator in &self.operators {
-            let symbols : Vec<String> = operator.symbols();
+        for operators in self.operator_precedence() {
+            let mut operator : Option<&Operator<T>> = None;
             while let Some(i) = expression.iter().position(|x| {
                         if let Token::Symbol(symbol) = x {
-                            symbol == &symbols[symbols.len() - 1]
-                        } else {
-                            false
+                            for candidate in &operators {
+                                let symbols : Vec<String> = candidate.symbols();
+                                if symbol == &symbols[symbols.len() -1] {
+                                    operator = Some(candidate);
+                                    return true;
+                                }
+                            }
                         }
+                        false
                     }) {
+                let operator : &Operator<T> = operator?;
+                let symbols : Vec<String> = operator.symbols();
                 // since i = end, I'm going to iterate backwards to find the start.
                 // This might seem wasteful, but the computation is easier in the
                 // long-term since I don't have to constantly reverse the vectors
@@ -231,7 +238,7 @@ impl<T> Parser<T> {
         symbols
     }
 
-    /// Returns a `Vec<&Operator<T>>` of references to the operators within the parser
+    /// Returns a `Vec<&Operator<T>>` of references to the operators within the parser.
     #[allow(dead_code)]
     pub fn operators(&self) -> Vec<&Operator<T>> {
         let mut operators : Vec<&Operator<T>> = Vec::new();
@@ -239,6 +246,28 @@ impl<T> Parser<T> {
             operators.push(operator);
         }
         operators
+    }
+
+    /// Returns a `Vec<Vec<&Operator<T>>>` of references to operators which have the same precedence.
+    #[allow(dead_code)]
+    pub fn operator_precedence(&self) -> Vec<Vec<&Operator<T>>> {
+        let mut collection : Vec<Vec<&Operator<T>>> = Vec::new();
+        let mut precedence : Option<usize> = None;
+        let mut operators : Vec<&Operator<T>> = Vec::new();
+        for operator in &self.operators {
+            if let Some(current) = precedence {
+                if operator.precedence() != current {
+                    collection.push(operators);
+                    operators = Vec::new();
+                }
+            }
+            precedence = Some(operator.precedence());
+            operators.push(operator);
+        }
+        if operators.len() != 0 {
+            collection.push(operators);
+        }
+        collection
     }
 
     /// Parses a single value of an expression between a `start` and `end` index.
