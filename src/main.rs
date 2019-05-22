@@ -31,11 +31,11 @@ fn main() {
     // parse
     let expression : String = input::read_buffer();
     match parser.parse(&expression) {
-        Ok(tokens) => {
+        Some(tokens) => {
             if tokens.len() == 0 {
-                println!("Empty expression.");
+                println!("Error: Empty expression.");
             } else {
-                for token in tokens {
+                for token in &tokens {
                     match token {
                         Token::Symbol(symbol) => {
                             println!("Symbol: {}", symbol);
@@ -43,12 +43,20 @@ fn main() {
                         Token::Value(value) => {
                             println!("Value: {}", value);
                         }
+                        Token::Tree(op, vec) => {
+                            println!("Tree: {} [{}]", op.pattern(), vec.len());
+                        }
                     }
+                }
+                if let Some(_) = parser.build_token_tree(&tokens) {
+                    println!("Tree constructed!");
+                } else {
+                    println!("Error: Unable to construct tree.");
                 }
             }
         },
-        Err(msg) => {
-            println!("Error: {}", msg);
+        None => {
+            println!("Error: Unable to parse expression.");
         }
     }
 }

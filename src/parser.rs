@@ -46,7 +46,7 @@ impl<T> Parser<T> {
 
     /// Splits a `&str` expression into a `Vec<Token>` of tokens.
     #[allow(dead_code)]
-    pub fn parse<'a>(&self, expression : &str) -> Result<Vec<Token<T>>, &'a str> where
+    pub fn parse(&self, expression : &str) -> Option<Vec<Token<T>>> where
             T : std::str::FromStr {
         let expression : &str = &expression
                 .replace("\n", "")
@@ -85,8 +85,8 @@ impl<T> Parser<T> {
         for (i, symbol) in regions {
             if i > base {
                 match self.parse_value(expression, base, i) {
-                    Ok(value) => tokens.push(Token::Value(value)),
-                    Err(msg) => return Err(msg)
+                    Some(value) => tokens.push(Token::Value(value)),
+                    None => return None
                 }
             }
             base = i + symbol.len();
@@ -94,11 +94,101 @@ impl<T> Parser<T> {
         }
         if last > base {
             match self.parse_value(expression, base, last) {
-                Ok(value) => tokens.push(Token::Value(value)),
-                Err(msg) => return Err(msg)
+                Some(value) => tokens.push(Token::Value(value)),
+                None => return None
             }
         }
-        Ok(tokens)
+        Some(tokens)
+    }
+
+    /// Simplifys an expression from a vector of tokens to a single token tree.
+    #[allow(dead_code)]
+    pub fn build_token_tree(&self, expression : &[Token<T>]) -> Option<Token<T>> where
+            T : Clone,
+            T : std::fmt::Display {
+        let mut expression : Vec<Token<T>> = expression.to_owned();
+        for operator in &self.operators {
+            let symbols : Vec<String> = operator.symbols();
+            while let Some(i) = expression.iter().rposition(|x| {
+                        if let Token::Symbol(symbol) = x {
+                            symbol == &symbols[0]
+                        } else {
+                            false
+                        }
+                    }) {
+                let mut start : usize = i;
+                let mut end : usize = start + 1;
+                let mut arguments : Vec<Token<T>> = Vec::new();
+                // push start element
+                if operator.is_post() {
+                    if start == 0 {
+                        return None;
+                    }
+                    start -= 1;
+                    arguments.push(expression[start].to_owned());
+                }
+                // push nested elements
+                let mut symbol_id : usize = 1;
+                let mut subexpression : Vec<Token<T>> = Vec::new();
+                loop {
+                    if symbol_id >= symbols.len() {
+                        break;
+                    }
+                    if end < expression.len() {
+                        match &expression[end] {
+                            Token::Symbol(symbol) => {
+                                if symbol == &symbols[symbol_id] {
+                                    // build subexpression
+                                    if let Some(tree) = self.build_token_tree(&subexpression) {
+                                        arguments.push(tree);
+                                        subexpression.clear();
+                                        symbol_id += 1;
+                                    } else {
+                                        return None;
+                                    }
+                                } else {
+                                    subexpression.push(Token::Symbol(symbol.to_owned()));
+                                }
+                            },
+                            other => subexpression.push(other.to_owned())
+                        }
+                        end += 1;
+                    } else {
+                        // exceeds bounds
+                        return None;
+                    }
+                }
+                // push end element
+                if operator.is_pre() {
+                    if end == expression.len() {
+                        return None;
+                    }
+                    arguments.push(expression[end].to_owned());
+                    end += 1;
+                }
+                // debug
+                print!("Operator: {} Operands: ", operator.pattern());
+                for item in &arguments {
+                    match item {
+                        Token::Symbol(symbol) => print!("Symbol={},",symbol),
+                        Token::Value(value) => print!("Value={},", value),
+                        Token::Tree(op, args) => print!("Tree={},", op.pattern())
+                    }
+                }
+                println!();
+                // remove this segment and replace it with a new token tree
+                while end > start {
+                    end -= 1;
+                    expression.remove(start);
+                }
+                expression.insert(start, Token::Tree(operator.to_owned(), arguments))
+            }
+        }
+        if expression.len() == 1 {
+            Some(expression[0].to_owned())
+        } else {
+            None
+        }
     }
 
     /// Returns a `Vec<String>` of all possible operator symbols, organised from shortest to longest with no duplicates.
@@ -139,29 +229,31 @@ impl<T> Parser<T> {
     /// Parses a single value of an expression between a `start` and `end` index.
     /// Returns a `Result<Option<T>, &str>`. `Ok(None)` is returned when the substring results in an empty string.
     #[allow(dead_code)]
-    pub fn parse_value<'a>(&self, expression : &str, start : usize, end : usize) -> Result<T, &'a str> where
+    pub fn parse_value(&self, expression : &str, start : usize, end : usize) -> Option<T> where
             T : std::str::FromStr {
-        if start >= end {
-            return Err("Invalid expression substring.");
+        if start < end {
+            let substring : String = expression
+                    .chars()
+                    .skip(start)
+                    .take(end - start)
+                    .collect();
+            match substring.parse::<T>() {
+                Ok(value) => return Some(value),
+                _ => {}
+            }
         }
-        let substring : String = expression
-                .chars()
-                .skip(start)
-                .take(end - start)
-                .collect();
-        match substring.parse::<T>() {
-            Ok(value) => Ok(value),
-            _ => Err("Unable to parse expression value.")
-        }
+        None
     }
 }
 
-/// A recursive data type which is used to represent a parse tree.
+/// An enum used to collect values and symbols into a single parent.
+/// Also acts as a recursive data type used to express a parse tree, i.e. a `Token::Tree`.
 #[allow(dead_code)]
 #[derive(Clone)]
-pub enum ParseTree<T> {
-    Leaf(T),
-    Node(Operator<T>, Vec<ParseTree<T>>)
+pub enum Token<T> {
+    Value(T),
+    Symbol(String),
+    Tree(Operator<T>, Vec<Token<T>>)
 }
 
 /// A structure used to define generic operators.
@@ -174,7 +266,6 @@ pub struct Operator<T> {
     precedence : usize,
     operation : fn(&[T]) -> T
 }
-
 impl<T> Operator<T> {
     /// Constructs a new `Operator` instance.
     #[allow(dead_code)]
@@ -207,10 +298,10 @@ impl<T> Operator<T> {
         }
     }
 
-    /// Returns a vctor of available symbols for this operator.
+    /// Calls the operator's operation on an input array of arguments of type `T`.
     #[allow(dead_code)]
-    pub fn symbols(&self) -> Vec<String> {
-        self.symbols.clone()
+    pub fn operate(&self, args : &[T]) -> T {
+        (self.operation)(args)
     }
 
     /// Returns whether the operator has postfix behaviour
@@ -231,6 +322,12 @@ impl<T> Operator<T> {
         // more than one symbol means that the operator has a pattern of (at least) the form "s1_s2" where "s1" and "s2" are symbols.
         // for example the modulus operator is a bracket operator because it has the pattern "|_|".
         self.symbols.len() > 1
+    }
+
+    /// Returns a vector of available symbols for this operator.
+    #[allow(dead_code)]
+    pub fn symbols(&self) -> Vec<String> {
+        self.symbols.clone()
     }
 
     /// Returns the operator's pattern as a string.
@@ -262,17 +359,4 @@ impl<T> Operator<T> {
     pub fn precedence(&self) -> usize {
         self.precedence.clone()
     }
-
-    /// Calls the operator's operation on an input array of arguments of type `T`.
-    #[allow(dead_code)]
-    pub fn operate(&self, args : &[T]) -> T {
-        (self.operation)(args)
-    }
-}
-
-/// An enum used to collect values and symbols into a single parent.
-#[allow(dead_code)]
-pub enum Token<T> {
-    Value(T),
-    Symbol(String)
 }
