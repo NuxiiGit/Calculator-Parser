@@ -104,8 +104,7 @@ impl<T> Parser<T> {
     /// Simplifys an expression from a vector of tokens to a single token tree.
     #[allow(dead_code)]
     pub fn build_token_tree(&self, expression : &[Token<T>]) -> Option<Token<T>> where
-            T : Clone,
-            T : std::fmt::Display {
+            T : Clone {
         let mut expression : Vec<Token<T>> = expression.to_owned();
         for operators in self.operator_precedence() {
             let mut operator : Option<&Operator<T>> = None;
@@ -188,16 +187,6 @@ impl<T> Parser<T> {
                     arguments.push(expression[end].to_owned());
                     end += 1;
                 }
-                // debug
-                print!("Operator: {} Operands: ", operator.pattern());
-                for item in &arguments {
-                    match item {
-                        Token::Symbol(symbol) => print!("Symbol={},",symbol),
-                        Token::Value(value) => print!("Value={},", value),
-                        Token::Tree(op, _) => print!("Tree={},", op.pattern())
-                    }
-                }
-                println!();
                 // remove this segment and replace it with a new token tree
                 while end > start {
                     end -= 1;
@@ -298,6 +287,25 @@ pub enum Token<T> {
     Value(T),
     Symbol(String),
     Tree(Operator<T>, Vec<Token<T>>)
+}
+impl<T> Token<T> {
+    /// Evaluates a token to a value of `Option<T>`.
+    /// Returns `None` if unsuccessful.
+    #[allow(dead_code)]
+    pub fn evaluate(&self) -> Option<T> where
+            T : Clone {
+        match self {
+            Token::Value(value) => Some(value.to_owned()),
+            Token::Symbol(_) => None,
+            Token::Tree(operator, tokens) => {
+                let mut args : Vec<T> = Vec::new();
+                for token in tokens {
+                    args.push(token.evaluate()?);
+                }
+                Some(operator.operate(&args))
+            }
+        }
+    }
 }
 
 /// A structure used to define generic operators.

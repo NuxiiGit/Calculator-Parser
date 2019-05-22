@@ -35,23 +35,14 @@ fn main() {
             if tokens.len() == 0 {
                 println!("Error: Empty expression.");
             } else {
-                for token in &tokens {
-                    match token {
-                        Token::Symbol(symbol) => {
-                            println!("Symbol: {}", symbol);
-                        },
-                        Token::Value(value) => {
-                            println!("Value: {}", value);
+                match parser.build_token_tree(&tokens) {
+                    Some(tree) => {
+                        match tree.evaluate() {
+                            Some(value) => println!("Value: {}", value),
+                            None => println!("Error: Unable to evaluate parse tree.")
                         }
-                        Token::Tree(op, vec) => {
-                            println!("Tree: {} [{}]", op.pattern(), vec.len());
-                        }
-                    }
-                }
-                if let Some(_) = parser.build_token_tree(&tokens) {
-                    println!("Tree constructed!");
-                } else {
-                    println!("Error: Unable to construct tree.");
+                    },
+                    None => println!("Error: Unable to build parse tree.")
                 }
             }
         },
