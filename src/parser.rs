@@ -109,14 +109,29 @@ impl<T> Parser<T> {
         let mut expression : Vec<Token<T>> = expression.to_owned();
         for operator in &self.operators {
             let symbols : Vec<String> = operator.symbols();
-            while let Some(i) = expression.iter().rposition(|x| {
+            while let Some(i) = expression.iter().position(|x| {
                         if let Token::Symbol(symbol) = x {
-                            symbol == &symbols[0]
+                            symbol == &symbols[symbols.len() - 1]
                         } else {
                             false
                         }
                     }) {
+                // since i = end, I'm going to iterate backwards to find the start.
+                // This might seem wasteful, but the computation is easier in the
+                // long-term since I don't have to constantly reverse the vectors
+                // when creeping forwards.
                 let mut start : usize = i;
+                loop {
+                    if let Token::Symbol(symbol) = &expression[start] {
+                        if symbol == &symbols[0] {
+                            break;
+                        }
+                    }
+                    if start == 0 {
+                        return None; // no start
+                    }
+                    start -= 1;
+                }
                 let mut end : usize = start + 1;
                 let mut arguments : Vec<Token<T>> = Vec::new();
                 // push start element
@@ -172,7 +187,7 @@ impl<T> Parser<T> {
                     match item {
                         Token::Symbol(symbol) => print!("Symbol={},",symbol),
                         Token::Value(value) => print!("Value={},", value),
-                        Token::Tree(op, args) => print!("Tree={},", op.pattern())
+                        Token::Tree(op, _) => print!("Tree={},", op.pattern())
                     }
                 }
                 println!();
