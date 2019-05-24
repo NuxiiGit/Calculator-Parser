@@ -19,16 +19,6 @@ fn main() {
     parser.add_op(Operator::new("_/_", 1, |args| args[0] / args[1]));
     parser.add_op(Operator::new("_+_", 0, |args| args[0] + args[1]));
     parser.add_op(Operator::new("_-_", 0, |args| args[0] - args[1]));
-    // tests
-    print!("Your symbols are:");
-    for symbol in parser.symbols() {
-        print!(" {},", symbol);
-    }
-    println!();
-    println!("Your operators are:");
-    for operator in parser.operators() {
-        println!("pattern={}, precedence={}, (post={}, bracket={}, pre={})", operator.pattern(), operator.precedence(), operator.is_post(), operator.is_bracket(), operator.is_pre());
-    }
     // parse
     let expression : String = input::read_buffer();
     match parser.parse(&expression) {
