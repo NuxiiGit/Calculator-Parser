@@ -21,9 +21,19 @@ pub fn read_args(start : Option<usize>, end : Option<usize>) -> Vec<String> {
     let mut args : Vec<String> = Vec::new();
     let mut i : usize = 0;
     std::env::args().for_each(|x| {
-        match start {Some(x) => {if i <  x {return;}}, None => {}}
-        match end   {Some(x) => {if i >= x {return;}}, None => {}}
-        args.push(x);
+        let mut valid : bool = true;
+        if let Some(j) = start {
+            if i < j {
+                valid = false;
+            }
+        } else if let Some(j) = end {
+            if i >= j {
+                valid = false;
+            }
+        }
+        if valid {
+            args.push(x);
+        }
         i += 1;
     });
     args
