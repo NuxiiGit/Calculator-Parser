@@ -26,7 +26,8 @@ pub fn read_args(start : Option<usize>, end : Option<usize>) -> Vec<String> {
             if i < j {
                 valid = false;
             }
-        } else if let Some(j) = end {
+        }
+        if let Some(j) = end {
             if i >= j {
                 valid = false;
             }
