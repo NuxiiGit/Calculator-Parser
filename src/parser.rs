@@ -84,19 +84,15 @@ impl<T> Parser<T> {
         let last : usize = expression.len();
         for (i, symbol) in regions {
             if i > base {
-                match self.parse_value(expression, base, i) {
-                    Some(value) => tokens.push(Token::Value(value)),
-                    None => return None
-                }
+                let value : T = self.parse_value(expression, base, i)?;
+                tokens.push(Token::Value(value));
             }
             base = i + symbol.len();
             tokens.push(Token::Symbol(symbol));
         }
         if last > base {
-            match self.parse_value(expression, base, last) {
-                Some(value) => tokens.push(Token::Value(value)),
-                None => return None
-            }
+            let value : T = self.parse_value(expression, base, last)?;
+            tokens.push(Token::Value(value));
         }
         Some(tokens)
     }
@@ -109,17 +105,17 @@ impl<T> Parser<T> {
         for operators in self.operator_precedence() {
             let mut operator : Option<&Operator<T>> = None;
             while let Some(i) = expression.iter().position(|x| {
-                        if let Token::Symbol(symbol) = x {
-                            for candidate in &operators {
-                                let symbols : Vec<String> = candidate.symbols();
-                                if symbol == &symbols[symbols.len() -1] {
-                                    operator = Some(candidate);
-                                    return true;
-                                }
-                            }
+                if let Token::Symbol(symbol) = x {
+                    for candidate in &operators {
+                        let symbols : Vec<String> = candidate.symbols();
+                        if symbol == &symbols[symbols.len() -1] {
+                            operator = Some(candidate);
+                            return true;
                         }
-                        false
-                    }) {
+                    }
+                }
+                false
+            }) {
                 let operator : &Operator<T> = operator?;
                 let symbols : Vec<String> = operator.symbols();
                 // since i = end, I'm going to iterate backwards to find the start.
@@ -260,7 +256,7 @@ impl<T> Parser<T> {
     }
 
     /// Parses a single value of an expression between a `start` and `end` index.
-    /// Returns a `Result<Option<T>, &str>`. `Ok(None)` is returned when the substring results in an empty string.
+    /// Returns an `Option<T>`. `None` is returned when the substring results in an empty string.
     #[allow(dead_code)]
     pub fn parse_value(&self, expression : &str, start : usize, end : usize) -> Option<T> where
             T : std::str::FromStr {
@@ -270,9 +266,8 @@ impl<T> Parser<T> {
                     .skip(start)
                     .take(end - start)
                     .collect();
-            match substring.parse::<T>() {
-                Ok(value) => return Some(value),
-                _ => {}
+            if let Ok(value) = substring.parse::<T>() {
+                return Some(value);
             }
         }
         None
