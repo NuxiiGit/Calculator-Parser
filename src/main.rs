@@ -12,6 +12,7 @@ fn main() {
     parser.add_op(Operator::new("|_|",    9, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
     parser.add_op(Operator::new("_^_",    8, |args| args[0].powf(args[1])));
     parser.add_op(Operator::new("_*_",    7, |args| args[0] * args[1]));
+    parser.add_op(Operator::new("_%_",    7, |args| args[0] % args[1]));
     parser.add_op(Operator::new("_/_",    7, |args| args[0] / args[1]));
     parser.add_op(Operator::new("_+_",    6, |args| args[0] + args[1]));
     parser.add_op(Operator::new("_-_",    6, |args| args[0] - args[1]));
