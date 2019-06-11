@@ -10,6 +10,7 @@ fn main() {
     parser.add_op(Operator::new("false", 5, |_| 0.0));
     parser.add_op(Operator::new("(_)",   4, |args| args[0]));
     parser.add_op(Operator::new("|_|",   4, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
+    parser.add_op(Operator::new("_?_:_", 3, |args| if args[0] > 0.0 {args[1]} else {args[2]}));
     parser.add_op(Operator::new("_>_",   3, |args| if args[0] > args[1] {1.0} else {0.0}));
     parser.add_op(Operator::new("_<_",   3, |args| if args[0] < args[1] {1.0} else {0.0}));
     parser.add_op(Operator::new("_>=_",  3, |args| if args[0] >= args[1] {1.0} else {0.0}));
