@@ -6,22 +6,32 @@ use parser::*;
 fn main() {
     // initialise parser
     let mut parser : Parser<f64> = Parser::new();
-    parser.add_op(Operator::new("true",  10, |_| 1.0));
-    parser.add_op(Operator::new("false", 10, |_| 0.0));
-    parser.add_op(Operator::new("(_)",    9, |args| args[0]));
-    parser.add_op(Operator::new("|_|",    9, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
-    parser.add_op(Operator::new("_^_",    8, |args| args[0].powf(args[1])));
-    parser.add_op(Operator::new("_*_",    7, |args| args[0] * args[1]));
-    parser.add_op(Operator::new("_%_",    7, |args| args[0] % args[1]));
-    parser.add_op(Operator::new("_/_",    7, |args| args[0] / args[1]));
-    parser.add_op(Operator::new("_+_",    6, |args| args[0] + args[1]));
-    parser.add_op(Operator::new("_-_",    6, |args| args[0] - args[1]));
-    parser.add_op(Operator::new("_>_",    5, |args| if args[0] > args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_<_",    5, |args| if args[0] < args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_>=_",   5, |args| if args[0] >= args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_<=_",   5, |args| if args[0] <= args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_=_",    5, |args| if args[0] == args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("¬_",     4, |args| if args[0] > 0.0 {0.0} else {1.0}));
+    parser.add_op(Operator::new("true",  11, |_| 1.0));
+    parser.add_op(Operator::new("false", 11, |_| 0.0));
+    parser.add_op(Operator::new("(_)",   10, |args| args[0]));
+    parser.add_op(Operator::new("|_|",   10, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
+    parser.add_op(Operator::new("_^_",    9, |args| args[0].powf(args[1])));
+    parser.add_op(Operator::new("_!",     8, |args| {
+        fn fact(n : f64) -> f64 {
+            let n : f64 = n.floor();
+            match n {
+                _ if n < 1.0 => 1.0,
+                _ => n * fact(n - 1.0)
+            }
+        };
+        fact(args[0])
+    }));
+    parser.add_op(Operator::new("¬_",     7, |args| if args[0] > 0.0 {0.0} else {1.0}));
+    parser.add_op(Operator::new("_*_",    6, |args| args[0] * args[1]));
+    parser.add_op(Operator::new("_%_",    6, |args| args[0] % args[1]));
+    parser.add_op(Operator::new("_/_",    6, |args| args[0] / args[1]));
+    parser.add_op(Operator::new("_+_",    5, |args| args[0] + args[1]));
+    parser.add_op(Operator::new("_-_",    5, |args| args[0] - args[1]));
+    parser.add_op(Operator::new("_>_",    4, |args| if args[0] > args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_<_",    4, |args| if args[0] < args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_>=_",   4, |args| if args[0] >= args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_<=_",   4, |args| if args[0] <= args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_=_",    4, |args| if args[0] == args[1] {1.0} else {0.0}));
     parser.add_op(Operator::new("_/\\_",  3, |args| if (args[0] * args[1]) > 0.0 {1.0} else {0.0}));
     parser.add_op(Operator::new("_\\/_",  2, |args| if (args[0] + args[1]) > 0.0 {1.0} else {0.0}));
     parser.add_op(Operator::new("_->_",   1, |args| if (args[0] > 0.0) && (args[1] <= 0.0) {0.0} else {1.0}));
