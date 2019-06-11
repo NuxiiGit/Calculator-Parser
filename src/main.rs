@@ -3,6 +3,25 @@ mod input;
 
 use parser::*;
 
+
+macro_rules! TRUE {
+    () => {1.0};
+    ($value : expr) => {{
+        if $value > 0.0 {
+            true
+        } else {
+            false
+        }
+    }};
+}
+
+macro_rules! FALSE {
+    () => {0.0};
+    ($value : expr) => {{
+        !TRUE!($value)
+    }};
+}
+
 fn main() {
     // initialise parser
     let mut parser : Parser<f64> = Parser::new();
@@ -10,12 +29,13 @@ fn main() {
     parser.add_op(Operator::new("false", 5, |_| 0.0));
     parser.add_op(Operator::new("(_)",   4, |args| args[0]));
     parser.add_op(Operator::new("|_|",   4, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
-    parser.add_op(Operator::new("_?_:_", 3, |args| if args[0] > 0.0 {args[1]} else {args[2]}));
-    parser.add_op(Operator::new("_>_",   3, |args| if args[0] > args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_<_",   3, |args| if args[0] < args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_>=_",  3, |args| if args[0] >= args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_<=_",  3, |args| if args[0] <= args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_=_",   3, |args| if args[0] == args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_?_:_", 3, |args| if TRUE!(args[0]) {args[1]} else {args[2]}));
+    parser.add_op(Operator::new("_/\\_",   3, |args| if TRUE!(args[0]) && TRUE!(args[1]) {TRUE!()} else {FALSE!()}));
+    parser.add_op(Operator::new("_>_",   3, |args| if args[0] > args[1] {TRUE!()} else {FALSE!()}));
+    parser.add_op(Operator::new("_<_",   3, |args| if args[0] < args[1] {TRUE!()} else {FALSE!()}));
+    parser.add_op(Operator::new("_>=_",  3, |args| if args[0] >= args[1] {TRUE!()} else {FALSE!()}));
+    parser.add_op(Operator::new("_<=_",  3, |args| if args[0] <= args[1] {TRUE!()} else {FALSE!()}));
+    parser.add_op(Operator::new("_=_",   3, |args| if args[0] == args[1] {TRUE!()} else {FALSE!()}));
     parser.add_op(Operator::new("_^_",   2, |args| args[0].powf(args[1])));
     parser.add_op(Operator::new("_*_",   1, |args| args[0] * args[1]));
     parser.add_op(Operator::new("_/_",   1, |args| args[0] / args[1]));
