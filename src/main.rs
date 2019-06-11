@@ -6,15 +6,20 @@ use parser::*;
 fn main() {
     // initialise parser
     let mut parser : Parser<f64> = Parser::new();
-    parser.add_op(Operator::new("true", 4, |_| 1.0));
-    parser.add_op(Operator::new("false", 4, |_| 0.0));
-    parser.add_op(Operator::new("(_)", 3, |args| args[0]));
-    parser.add_op(Operator::new("|_|", 3, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
-    parser.add_op(Operator::new("_^_", 2, |args| args[0].powf(args[1])));
-    parser.add_op(Operator::new("_*_", 1, |args| args[0] * args[1]));
-    parser.add_op(Operator::new("_/_", 1, |args| args[0] / args[1]));
-    parser.add_op(Operator::new("_+_", 0, |args| args[0] + args[1]));
-    parser.add_op(Operator::new("_-_", 0, |args| args[0] - args[1]));
+    parser.add_op(Operator::new("true",  5, |_| 1.0));
+    parser.add_op(Operator::new("false", 5, |_| 0.0));
+    parser.add_op(Operator::new("(_)",   4, |args| args[0]));
+    parser.add_op(Operator::new("|_|",   4, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
+    parser.add_op(Operator::new("_>_",   3, |args| if args[0] > args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_<_",   3, |args| if args[0] < args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_>=_",  3, |args| if args[0] >= args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_<=_",  3, |args| if args[0] <= args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_=_",   3, |args| if args[0] == args[1] {1.0} else {0.0}));
+    parser.add_op(Operator::new("_^_",   2, |args| args[0].powf(args[1])));
+    parser.add_op(Operator::new("_*_",   1, |args| args[0] * args[1]));
+    parser.add_op(Operator::new("_/_",   1, |args| args[0] / args[1]));
+    parser.add_op(Operator::new("_+_",   0, |args| args[0] + args[1]));
+    parser.add_op(Operator::new("_-_",   0, |args| args[0] - args[1]));
     // parse
     let mut expression = input::read_args_single(Some(1), None);
     loop {
