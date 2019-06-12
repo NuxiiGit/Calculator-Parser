@@ -1,3 +1,20 @@
+/// A macro which can be used to construct a parser using custom code formatting.
+#[macro_export]
+macro_rules! build_parser {
+    ($($token : tt => $closure : expr),*) => ({
+        let mut parser = Parser::new();
+        $(parser.add_op(Operator::new($token, 0, $closure));)*
+        parser
+    });
+    ($($token : tt => $closure : expr),* ; $($($tokens : tt => $closures : expr),*);*) => ({
+        let mut parser = Parser::new();
+        let mut preceedence : usize = 0;
+        $(parser.add_op(Operator::new($token, preceedence, $closure));)*
+        $(preceedence += 1; $(parser.add_op(Operator::new($tokens, preceedence, $closures));)*)*
+        parser
+    });
+}
+
 /// A structure used to parse input.
 #[allow(dead_code)]
 pub struct Parser<T> {

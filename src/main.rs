@@ -5,7 +5,11 @@ use parser::*;
 
 fn main() {
     // initialise parser
-    let mut parser : Parser<f64> = Parser::new();
+    let mut parser : Parser<f64> = build_parser!(
+        "_2_" => |args| args[0] - args[1],
+        "_gh_" => |args| args[0] - args[1];
+        "_aa_" => |args| args[0] - args[1]
+    );
     parser.add_op(Operator::new("true",  11, |_| 1.0));
     parser.add_op(Operator::new("false", 11, |_| 0.0));
     parser.add_op(Operator::new("(_)",   10, |args| args[0]));
