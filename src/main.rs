@@ -36,7 +36,8 @@ fn main() {
         "_=_"   => |args| if args[0] <= args[1] {1.0} else {0.0};
         "_/\\_" => |args| if (args[0] * args[1]) > 0.0 {1.0} else {0.0};
         "_\\/_" => |args| if (args[0] + args[1]) > 0.0 {1.0} else {0.0};
-        "_->_"  => |args| if (args[0] > 0.0) && (args[1] <= 0.0) {0.0} else {1.0};
+        "_->_"  => |args| if (args[0] > 0.0) && (args[1] <= 0.0) {0.0} else {1.0},
+        "_<-_"  => |args| if (args[0] <= 0.0) && (args[1] > 0.0) {0.0} else {1.0};
         "_?_:_" => |args| if args[0] > 0.0 {args[1]} else {args[2]};
     );
     // parse
