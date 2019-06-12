@@ -1,8 +1,6 @@
 mod parser;
 mod input;
 
-use parser::*;
-
 fn main() {
     // initialise parser
     let parser = build_parser!(

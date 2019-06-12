@@ -2,15 +2,15 @@
 #[macro_export]
 macro_rules! build_parser {
     ($($token : tt => $closure : expr),*) => ({
-        let mut parser = Parser::new();
+        let mut parser = parser::Parser::new();
         $(parser.add_op(Operator::new($token, 0, $closure));)*
         parser
     });
     ($($token : tt => $closure : expr),* ; $($($tokens : tt => $closures : expr),*);*) => ({
-        let mut parser = Parser::new();
+        let mut parser = parser::Parser::new();
         let mut _precedence : usize = 0;
-        $(parser.add_op(Operator::new($token, _precedence, $closure));)*
-        $(_precedence += 1; $(parser.add_op(Operator::new($tokens, _precedence, $closures));)*)*
+        $(parser.add_op(parser::Operator::new($token, _precedence, $closure));)*
+        $(_precedence += 1; $(parser.add_op(parser::Operator::new($tokens, _precedence, $closures));)*)*
         parser
     });
 }
