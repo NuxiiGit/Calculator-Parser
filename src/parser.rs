@@ -8,9 +8,9 @@ macro_rules! build_parser {
     });
     ($($token : tt => $closure : expr),* ; $($($tokens : tt => $closures : expr),*);*) => ({
         let mut parser = Parser::new();
-        let mut preceedence : usize = 0;
-        $(parser.add_op(Operator::new($token, preceedence, $closure));)*
-        $(preceedence += 1; $(parser.add_op(Operator::new($tokens, preceedence, $closures));)*)*
+        let mut _precedence : usize = 0;
+        $(parser.add_op(Operator::new($token, _precedence, $closure));)*
+        $(_precedence += 1; $(parser.add_op(Operator::new($tokens, _precedence, $closures));)*)*
         parser
     });
 }
