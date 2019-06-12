@@ -5,41 +5,36 @@ use parser::*;
 
 fn main() {
     // initialise parser
-    let mut parser : Parser<f64> = build_parser!(
-        "_2_" => |args| args[0] - args[1],
-        "_gh_" => |args| args[0] - args[1];
-        "_aa_" => |args| args[0] - args[1]
-    );
-    parser.add_op(Operator::new("true",  11, |_| 1.0));
-    parser.add_op(Operator::new("false", 11, |_| 0.0));
-    parser.add_op(Operator::new("(_)",   10, |args| args[0]));
-    parser.add_op(Operator::new("|_|",   10, |args| if args[0] >= 0.0 {args[0]} else {-args[0]}));
-    parser.add_op(Operator::new("_^_",    9, |args| args[0].powf(args[1])));
-    parser.add_op(Operator::new("_!",     8, |args| {
-        fn fact(n : f64) -> f64 {
-            let n : f64 = n.floor();
-            match n {
-                _ if n < 1.0 => 1.0,
-                _ => n * fact(n - 1.0)
-            }
+    let mut parser = build_parser!(
+        "true"  => |args| 1.0,
+        "false" => |args| 0.0;
+        "(_)"   => |args| args[0],
+        "|_|"   => |args| if args[0] >= 0.0 {args[0]} else {-args[0]};
+        "_!"    => |args| {
+            fn fact(n : f64) -> f64 {
+                let n : f64 = n.floor();
+                match n {
+                    _ if n < 1.0 => 1.0,
+                    _ => n * fact(n - 1.0)
+                }
+            };
+            fact(args[0])
         };
-        fact(args[0])
-    }));
-    parser.add_op(Operator::new("¬_",     7, |args| if args[0] > 0.0 {0.0} else {1.0}));
-    parser.add_op(Operator::new("_*_",    6, |args| args[0] * args[1]));
-    parser.add_op(Operator::new("_%_",    6, |args| args[0] % args[1]));
-    parser.add_op(Operator::new("_/_",    6, |args| args[0] / args[1]));
-    parser.add_op(Operator::new("_+_",    5, |args| args[0] + args[1]));
-    parser.add_op(Operator::new("_-_",    5, |args| args[0] - args[1]));
-    parser.add_op(Operator::new("_>_",    4, |args| if args[0] > args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_<_",    4, |args| if args[0] < args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_>=_",   4, |args| if args[0] >= args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_<=_",   4, |args| if args[0] <= args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_=_",    4, |args| if args[0] == args[1] {1.0} else {0.0}));
-    parser.add_op(Operator::new("_/\\_",  3, |args| if (args[0] * args[1]) > 0.0 {1.0} else {0.0}));
-    parser.add_op(Operator::new("_\\/_",  2, |args| if (args[0] + args[1]) > 0.0 {1.0} else {0.0}));
-    parser.add_op(Operator::new("_->_",   1, |args| if (args[0] > 0.0) && (args[1] <= 0.0) {0.0} else {1.0}));
-    parser.add_op(Operator::new("_?_:_",  0, |args| if args[0] > 0.0 {args[1]} else {args[2]}));
+        "_*_"   => |args| args[0] * args[1],
+        "_/_"   => |args| args[0] / args[1],
+        "_%_"   => |args| args[0] % args[1];
+        "_+_"   => |args| args[0] + args[1],
+        "_-_"   => |args| args[0] - args[1];
+        "_>_"   => |args| if args[0] > args[1] {1.0} else {0.0},
+        "_<_"   => |args| if args[0] < args[1] {1.0} else {0.0},
+        "_>=_"  => |args| if args[0] >= args[1] {1.0} else {0.0},
+        "_<=_"  => |args| if args[0] <= args[1] {1.0} else {0.0},
+        "_=_"   => |args| if args[0] <= args[1] {1.0} else {0.0};
+        "_/\\_" => |args| if (args[0] * args[1]) > 0.0 {1.0} else {0.0};
+        "_\\/_" => |args| if (args[0] + args[1]) > 0.0 {1.0} else {0.0};
+        "_->_"  => |args| if (args[0] > 0.0) && (args[1] <= 0.0) {0.0} else {1.0};
+        "_?_:_" => |args| if args[0] > 0.0 {args[1]} else {args[2]};
+    );
     // parse
     let mut expression = input::read_args_single(Some(1), None);
     loop {

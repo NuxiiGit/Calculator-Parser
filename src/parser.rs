@@ -30,7 +30,7 @@ impl<T> Parser<T> {
     }
 
     /// Consumes an operator and adds it to the parser's operator vector.
-    /// The vector is sorted in order of preceedence.
+    /// The vector is sorted in order of precedence.
     /// Panics when the input operator contains a duplicate symbol.
     #[allow(dead_code)]
     pub fn add_op<'a>(&mut self, operator : Operator<T>) {
@@ -45,9 +45,9 @@ impl<T> Parser<T> {
             let a : usize = a.precedence();
             let b : usize = b.precedence();
             if a < b {
-                Ordering::Greater
-            } else if a > b {
                 Ordering::Less
+            } else if a > b {
+                Ordering::Greater
             } else {
                 Ordering::Equal
             }
