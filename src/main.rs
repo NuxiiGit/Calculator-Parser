@@ -5,9 +5,9 @@ use parser::*;
 
 fn main() {
     // initialise parser
-    let mut parser = build_parser!(
-        "true"  => |args| 1.0,
-        "false" => |args| 0.0;
+    let parser = build_parser!(
+        "true"  => |_| 1.0,
+        "false" => |_| 0.0;
         "(_)"   => |args| args[0],
         "|_|"   => |args| if args[0] >= 0.0 {args[0]} else {-args[0]};
         "_!"    => |args| {
@@ -19,6 +19,10 @@ fn main() {
                 }
             };
             fact(args[0])
+        };
+        "_^_"    => |args| {
+            let a : f64 = args[0];
+            a.powf(args[1])
         };
         "_*_"   => |args| args[0] * args[1],
         "_/_"   => |args| args[0] / args[1],
