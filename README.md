@@ -1,10 +1,13 @@
-# Parser
-This parser is inspired by the [mixfix](https://agda.readthedocs.io/en/v2.5.2/language/mixfix-operators.html) operators used within the Agda programming language.
+# Mixfix Expressions
 
-## Explaination
-This feature gives you a lot of flexibility and allows you define custom syntax; they are defined by inserting underscores `_` in place of argument parameters.
+This repository contains the source code to my first ever [Rust](https://www.rust-lang.org/) project.
 
-For example: with the ternary operator `condition ? ifTrue : ifFalse`, its mixfix definition would be `_?_:_` since the underscores show the positions of each argument. Another example would be bracket operators such as functions, or the [inner product](http://mathworld.wolfram.com/InnerProduct.html) of two vectors `v` and `w`: `<v, w>`, whose mixfix definition would be `<_,_>`.
+## Inspiration
+This parser is inspired by the [mixfix](https://agda.readthedocs.io/en/v2.5.2/language/mixfix-operators.html) operators used in the within [Agda](https://en.wikipedia.org/wiki/Agda_(programming_language)).
+
+These operators let you define where functions accept arguments. For example, if you define a function `plus`, maybe you would want it to read as `a plus b` instead of `plus a b`; this feature lets you do that! by using `_`s you can tell the compiler where the arguments are supposed to be, so our function `plus` becomes `_plus_`, and then we can use it infix like we want.
+
+Another example would be the ternary operator `?:` in most C-style languages: you could create a function called `_?_:_` which accepts three arguments, and then use it as `condition ? a : b` since the `_`s tell you where it expects arguments to be.
 
 ## Limitations
-Mmy parser does not support mixed types. I don't feel like changing this because the project was an exercise. Therefore, the parser should be able to express any fixed-type operations, including: floating point arithmetic, boolean algebras, and vector spaces.
+My parser does not support mixed types, and I don't feel like changing this because the project was an exercise.
